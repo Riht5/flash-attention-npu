@@ -213,10 +213,8 @@ namespace Catlass::Gemm::Block
                     }
 
                     for (uint32_t m_loop_index = 0; m_loop_index < m_loop; m_loop_index++) {
-                        LocalTensor<ElementA>* l1_a_buf_tensor =
-                            pingpongFlagL1A ? &l1_a_pong_tensor : &l1_a_ping_tensor;
-                        LocalTensor<ElementA>* l0_a_buf_tensor =
-                            pingpongFlagL0A ? &l0_a_pong_tensor : &l0_a_ping_tensor;
+                        LocalTensor<ElementA>* l1_a_buf_tensor = pingpongFlagL1A ? &l1_a_pong_tensor : &l1_a_ping_tensor;
+                        LocalTensor<ElementA>* l0_a_buf_tensor = pingpongFlagL0A ? &l0_a_pong_tensor : &l0_a_ping_tensor;
                         LocalTensor<ElementB>* l0_b_buf_tensor = m_loop_index ? &l0_b_pong_tensor : &l0_b_ping_tensor;
                         LocalTensor<float>* l0_c_buf_tensor = pingpongFlagC ? &l0_c_pong_tensor : &l0_c_ping_tensor;   
 
@@ -252,8 +250,7 @@ namespace Catlass::Gemm::Block
                             uint32_t dstNzC0Stride = (m_loop_index == m_loop - 1) ? l1_m_block_size_align_tail : 128;
                             auto layoutTileA = layoutA.GetTileLayout(MakeCoord(real_n, real_m));
                             LayoutAInL1 layoutAInL1 = LayoutAInL1::template MakeLayout<ElementA>(real_n, real_m);
-                            copyGmToL1A(*l1_a_buf_tensor,
-                                gLeft[(n_loop_index * m_loop + m_loop_index - skip_num) * SIZE_128 * SIZE_128],
+                            copyGmToL1A(*l1_a_buf_tensor, gLeft[(n_loop_index * m_loop + m_loop_index - skip_num) * SIZE_128 * SIZE_128],
                                 layoutAInL1, layoutTileA);
                         }
 

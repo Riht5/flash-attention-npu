@@ -528,8 +528,8 @@ public:
                 curSeqQIdx * s1VecSize) * 8;
             
             // copyIn cube_workspace params
-            copyInOffset = cubeBlockIdx * cubeBaseMN * 2 + pingpongIdx * cubeBaseMN +
-                blockInfo.offset + curSeqQIdx * s1VecSize * s2CubeExtend;
+            copyInOffset = cubeBlockIdx * cubeBaseMN * 2 + pingpongIdx * cubeBaseMN + blockInfo.offset + curSeqQIdx * s1VecSize *
+                s2CubeExtend;
             copyInParam = {
                 static_cast<uint16_t>(s1Extend),
                 static_cast<uint16_t>(s2ExtendAlign * sizeof(float)),

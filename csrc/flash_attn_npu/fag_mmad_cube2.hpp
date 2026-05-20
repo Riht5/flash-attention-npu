@@ -216,8 +216,7 @@ namespace Catlass::Gemm::Block
                             auto layoutTileA = layoutA.GetTileLayout(MakeCoord(static_cast<uint32_t>(m_remain),
                                 static_cast<uint32_t>(n_remain)));
                             LayoutAInL1 layoutAInL1 = LayoutAInL1::template MakeLayout<ElementA>(m_remain, n_remain);
-                            copyGmToL1A(*l1_a_buf_tensor,
-                                gLeft[(m_loop * n_loop_index + m_loop_index - skip_num) * 128 * 128],
+                            copyGmToL1A(*l1_a_buf_tensor, gLeft[(m_loop * n_loop_index + m_loop_index - skip_num) * 128 * 128],
                                 layoutAInL1, layoutTileA);
                         }
                         AscendC::SetFlag<AscendC::HardEvent::MTE2_MTE1>(pingpongFlagL1A + 2);

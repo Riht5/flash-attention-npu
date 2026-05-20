@@ -30,12 +30,8 @@ uint32_t GetQSBlockTile(int64_t kvSeqlen)
 
 std::vector<at::Tensor>
 mha_fwd_kvcache(at::Tensor &q,                 // batch_size x seqlen_q x num_heads x head_size
-                // batch_size_c x seqlen_k x num_heads_k x head_size
-                // or num_blocks x page_block_size x num_heads_k x head_size if block_table
-                const at::Tensor &kcache,
-                // batch_size_c x seqlen_k x num_heads_k x head_size
-                // or num_blocks x page_block_size x num_heads_k x head_size if block_table
-                const at::Tensor &vcache,
+                const at::Tensor &kcache,            // batch_size_c x seqlen_k x num_heads_k x head_size or num_blocks x page_block_size x num_heads_k x head_size if there's a block_table.
+                const at::Tensor &vcache,            // batch_size_c x seqlen_k x num_heads_k x head_size or num_blocks x page_block_size x num_heads_k x head_size if there's a block_table.
                 std::optional<const at::Tensor> &k_, // batch_size x seqlen_knew x num_heads_k x head_size
                 std::optional<const at::Tensor> &v_, // batch_size x seqlen_knew x num_heads_k x head_size
                 std::optional<const at::Tensor> &seqlens_k_, // batch_size
@@ -458,17 +454,12 @@ mha_fwd(at::Tensor &q,                            // batch_size x seqlen_q x num
 
 std::vector<at::Tensor>
 mha_varlen_fwd(at::Tensor &q,  // total_q x num_heads x head_size, total_q := \sum_{i=0}^{b} s_i
-               // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
-               // or num_blocks x page_block_size x num_heads_k x head_size if block_table
-               const at::Tensor &k,
-               // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
-               // or num_blocks x page_block_size x num_heads_k x head_size if block_table
-               const at::Tensor &v,
-               std::optional<at::Tensor> &out_, // total_q x num_heads x head_size
+               const at::Tensor &k,  // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i or num_blocks x page_block_size x num_heads_k x head_size if there's a block_table.
+               const at::Tensor &v,  // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i or num_blocks x page_block_size x num_heads_k x head_size if there's a block_table.
+               std::optional<at::Tensor> &out_, // total_q x num_heads x head_size, total_q := \sum_{i=0}^{b} s_i
                const at::Tensor &cu_seqlens_q,  // b+1
                const at::Tensor &cu_seqlens_k,  // b+1
-               // b. If given, only this many elements of each batch element's keys are used
-               std::optional<at::Tensor> &seqused_k_,
+               std::optional<at::Tensor> &seqused_k_, // b. If given, only this many elements of each batch element's keys are used.
                std::optional<const at::Tensor> &leftpad_k_, // batch_size
                std::optional<at::Tensor> &block_table_, // batch_size x max_num_blocks_per_seq
                std::optional<at::Tensor> &alibi_slopes_, // num_heads or b x num_heads
@@ -691,20 +682,14 @@ mha_varlen_fwd(at::Tensor &q,  // total_q x num_heads x head_size, total_q := \s
 
 std::vector<at::Tensor>
 mha_varlen_bwd(const at::Tensor &dout,                   // total_q x num_heads x head_size
-               // total_q x num_heads x head_size, total_q := \sum_{i=0}^{b} s_i
-               const at::Tensor &q,
-               // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
-               const at::Tensor &k,
-               // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
-               const at::Tensor &v,
+               const at::Tensor &q,                      // total_q x num_heads x head_size, total_q := \sum_{i=0}^{b} s_i
+               const at::Tensor &k,                      // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
+               const at::Tensor &v,                      // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
                const at::Tensor &out,                    // total_q x num_heads x head_size
-               const at::Tensor &softmax_lse,            // h x total_q softmax logsumexp
-               // total_q x num_heads x head_size, total_q := \sum_{i=0}^{b} s_i
-               std::optional<at::Tensor> &dq_,
-               // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
-               std::optional<at::Tensor> &dk_,
-               // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
-               std::optional<at::Tensor> &dv_,
+               const at::Tensor &softmax_lse,            // h x total_q   softmax logsumexp
+               std::optional<at::Tensor> &dq_,           // total_q x num_heads x head_size, total_q := \sum_{i=0}^{b} s_i
+               std::optional<at::Tensor> &dk_,           // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
+               std::optional<at::Tensor> &dv_,           // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
                const at::Tensor &cu_seqlens_q,           // b+1
                const at::Tensor &cu_seqlens_k,           // b+1
                std::optional<at::Tensor> &alibi_slopes_, // num_heads or b x num_heads
