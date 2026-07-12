@@ -416,7 +416,7 @@ mha_fwd_kvcache(at::Tensor &q,                 // batch_size x seqlen_q x num_he
     TORCH_CHECK(!leftpad_k_.has_value(), "NPU FlashAttention does not support leftpad_k");
     TORCH_CHECK(!rotary_cos_.has_value(), "NPU FlashAttention does not support rotary embedding");
     TORCH_CHECK(!rotary_sin_.has_value(), "NPU FlashAttention does not support rotary embedding");
-    TORCH_CHECK(softcap == 0.0f, "NPU FlashAttention does not support softcap");
+    TORCH_CHECK(softcap >= 0.0f, "softcap must be non-negative (0.0 disables softcap)");
     TORCH_CHECK(num_splits == 1 || num_splits == 0, "NPU FlashAttention only supports num_splits=1 or num_splits=0");
 
     if (k_.has_value()) {
@@ -466,7 +466,12 @@ mha_fwd_kvcache(at::Tensor &q,                 // batch_size x seqlen_q x num_he
     tiling_cpu_ptr->set_numBlocks(static_cast<uint32_t>(num_blocks));
     tiling_cpu_ptr->set_blockSize(static_cast<uint32_t>(page_block_size));
     tiling_cpu_ptr->set_maxNumBlocksPerBatch(static_cast<uint32_t>(max_num_blocks_per_seq));
-    tiling_cpu_ptr->set_scaleValue(softmax_scale);
+    if (softcap > 0.0f) {
+        tiling_cpu_ptr->set_scaleValue(softmax_scale / softcap);
+    } else {
+        tiling_cpu_ptr->set_scaleValue(softmax_scale);
+    }
+    tiling_cpu_ptr->set_softcapValue(softcap);
     tiling_cpu_ptr->set_maxQSeqlen(seqlen_q);
     int32_t max_kv_seqlen = 0;
     for (int32_t i = 0; i < batch_size; i++) {
